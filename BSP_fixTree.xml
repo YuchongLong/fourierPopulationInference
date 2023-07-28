@@ -1,0 +1,63 @@
+<!-- Uses Remaster to simulate a tree under a coalescent model with
+     constant population size 2.0, then uses BEAST to infer the population
+     size from the tree. -->
+
+     <beast version="2.0"
+     namespace="beast.base.inference.parameter:remaster
+                :beast.base.inference
+                :beast.base.evolution
+                :beast.base.evolution.tree
+                :beast.base.evolution.tree.coalescent">
+
+<!-- add prior of present pop size and subsequent pop size -->
+<run spec="MCMC" chainLength="3000000">
+  <state>
+    <stateNode spec="IntegerParameter" id="bGroupSizes" value="10 10 10 10 10 10 10 10 10 25" lower="0"/>
+    <stateNode spec="RealParameter" id="bPopSizes" value="4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0"/>
+  </state>
+
+  <!-- add id's and log them -->
+  <distribution spec="CompoundDistribution">
+    <distribution id="BayesianSkyline" spec="BayesianSkyline" groupSizes="@bGroupSizes" popSizes="@bPopSizes">
+            <treeIntervals spec="tree.TreeIntervals">
+
+            <tree id="tree" spec='feast.fileio.TreeFromNexusFile' fileName="file_path"
+                IsLabelledNewick="true" adjustTipHeights="false"/>
+
+            </treeIntervals>
+
+    </distribution>
+    
+    <distribution id="MarkovChainedPopSizes" spec="distribution.MarkovChainDistribution" jeffreys="true" parameter="@bPopSizes"/>
+
+  </distribution>
+
+    
+  <operator spec="operator.ScaleOperator" id="popSizeScaler" scaleFactor="0.8"
+            parameter="@bPopSizes" weight="1.0"/>
+  <operator id="groupSizesDelta" spec="operator.kernel.BactrianDeltaExchangeOperator" integer="true" weight="1.0">
+            <intparameter idref="bGroupSizes"/>
+  </operator>
+
+  <!-- File log -->
+  <logger fileName="$(filebase).log" logEvery="100">
+    <log idref="BayesianSkyline"/>
+    <log idref="bPopSizes"/>
+    <log idref="bGroupSizes"/>
+    <log idref="MarkovChainedPopSizes"/>
+    <log id="TreeHeight" spec="beast.base.evolution.tree.TreeStatLogger" tree="@tree"/>
+  </logger>
+
+  <!-- Screen log -->
+  <logger logEvery="10000">
+    <log idref="bPopSizes"/>
+    <log idref="bGroupSizes"/>
+  </logger>
+
+  <!-- Tree log -->
+  <logger fileName="$(filebase).trees" logEvery="100" mode="tree">
+    <log idref="tree"/>
+  </logger>
+  
+</run>
+</beast>

@@ -1,0 +1,28 @@
+<!-- Basic coalescent tree simulation from pseudo-periodic population function -->
+<beast version="2.0"
+       namespace="beast.base.inference.parameter:remaster
+                  :beast.base.evolution.tree.coalescent
+                  :feast.popmodels">
+  <run spec="Simulator" nSims="10">
+    <simulate id="tree" spec="SimulatedTree">
+      <trajectory id="traj" spec="CoalescentTrajectory" maxTrajLogAge="10" loggingGridSize="1000">
+        <population id="pop" spec="CompoundPopulationModel" changeTimes="2.0 4.0 6.0 8.0">
+          <populationModel spec="ConstantPopulation" popSize="2.0"/>
+          <populationModel spec="ConstantPopulation" popSize="1.0"/>
+          <populationModel spec="ConstantPopulation" popSize="2.0"/>
+          <populationModel spec="ConstantPopulation" popSize="1.0"/>
+          <populationModel spec="ConstantPopulation" popSize="2.0"/>
+        </population>
+
+        <reaction spec="PunctualReaction" n="100" times="0">0 -> pop</reaction>
+
+      </trajectory>
+    </simulate>
+
+    <logger fileName="$(filebase).trees" mode="tree">
+      <log spec="TypedTreeLogger" tree="@tree"/>
+    </logger>
+
+    <logger fileName="$(filebase).traj" log="@traj"/>
+  </run>
+</beast>

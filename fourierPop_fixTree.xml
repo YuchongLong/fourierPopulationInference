@@ -1,0 +1,64 @@
+<!-- Uses Remaster to simulate a tree under a coalescent model with
+     constant population size 2.0, then uses BEAST to infer the population
+     size from the tree. -->
+
+<beast version="2.0"
+       namespace="beast.base.inference.parameter:remaster
+                  :beast.base.inference
+                  :beast.base.evolution
+                  :beast.base.evolution.tree
+                  :beast.base.evolution.tree.coalescent">
+
+
+  <run spec="MCMC" chainLength="3000000">
+    <state>
+      <stateNode spec="RealParameter" id="inferredPeriod" value="1.0"/>
+      <stateNode spec="RealParameter" id="inferredCoeff" value="0.1 0.1 0.1 0.1 0.1"/>
+    </state>
+
+    <!-- add id's and log them -->
+    <distribution spec="CompoundDistribution">
+      <distribution spec="Coalescent">
+        <treeIntervals spec="tree.TreeIntervals">
+
+          <tree spec='feast.fileio.TreeFromNexusFile' fileName="file_path"
+              IsLabelledNewick="true" adjustTipHeights="false"/>
+
+        </treeIntervals>
+
+        <populationModel spec="FourierPopulation" coefficients="@inferredCoeff" periodicity="@inferredPeriod"/>
+      </distribution>
+
+      <distribution spec="distribution.Prior" id="coeffPrior" x="@inferredCoeff">
+        <distr spec="distribution.Normal" mean="0" sigma="1"/>
+      </distribution>
+
+      <distribution spec="distribution.Prior" id="periodPrior" x="@inferredPeriod">
+        <distr spec="distribution.Normal" mean="6.28" sigma="3.14"/>
+      </distribution>
+
+    </distribution>
+
+    <!-- change coeffScalar to random walk operator to allow negative coeff -->
+    <operator spec="operator.ScaleOperator" id="periodScaler" scaleFactor="0.8"
+              parameter="@inferredPeriod" weight="1.0"/>
+    <operator spec="operator.RealRandomWalkOperator" id="coeffScaler" windowSize="10.0"
+              parameter="@inferredCoeff" weight="5.0"/>
+
+
+    <!-- File log -->
+    <logger fileName="$(filebase).log" logEvery="100">
+      <log idref="inferredPeriod"/>
+      <log idref="inferredCoeff"/>
+      <log idref="coeffPrior"/>
+      <log idref="periodPrior"/>
+    </logger>
+
+    <!-- Screen log -->
+    <logger id="screenlog" spec="Logger" logEvery="10000">
+      <log idref="inferredPeriod"/>
+      <log idref="inferredCoeff"/>
+    </logger>
+    
+  </run>
+</beast>
